@@ -1,0 +1,27 @@
+{
+  "name": "qr-attendance-vercel",
+  "version": "1.0.0",
+  "description": "QR Code Attendance System with Vercel Serverless Functions",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "qr-code",
+    "attendance",
+    "whatsapp",
+    "google-sheets",
+    "vercel",
+    "serverless"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "googleapis": "^128.0.0",
+    "twilio": "^4.19.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
