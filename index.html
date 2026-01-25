@@ -85,7 +85,6 @@
             </div>
         </div>
     </div>
-
 <script>
         // --- CONFIGURATION ---
         const CONFIG = {
@@ -208,47 +207,57 @@
             }
         }
 
-        // --- DATA PROCESSING ---
+        // --- DATA PROCESSING (UPDATED) ---
         function handleScanSuccess(data) {
             if (scannedCodes.has(data)) return; 
 
-            // 1. EXTRACT ONLY NUMBERS
-            // We ignore commas, letters, and names completely.
-            const digits = data.replace(/\D/g, '');
+            let payload = {}; // Logic determines what we send
 
-            if (digits.length < 6) {
-                // If it's too short to be a phone number, ignore it silently or log error
-                // Not logging error to keep UI clean, just returning
-                return;
+            // CASE 1: TELEGRAM (@username)
+            if (data.startsWith('@')) {
+                addLog(`🔹 Telegram detected: ${data}`, 'info');
+                payload = { telegram: data };
+            } 
+            // CASE 2: PHONE NUMBER (077..., 77..., +964...)
+            else {
+                // Keep only numbers
+                let digits = data.replace(/\D/g, '');
+                if (digits.length < 6) return; // Too short to be a phone
+                
+                // We send the raw digits. The backend will handle the "Contains" logic.
+                payload = { phone: digits };
             }
 
-            // Valid Phone Found
             scanningEnabled = false;
             document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-yellow-500';
             document.getElementById('statusText').textContent = 'Processing...';
 
             scannedCodes.add(data);
-            sendToBackend(digits);
+            sendToBackend(payload);
         }
 
-// --- API COMMUNICATION ---
-        async function sendToBackend(phone) {
+        // --- API COMMUNICATION ---
+        async function sendToBackend(payload) {
             try {
                 const response = await fetch(`${CONFIG.apiUrl}/record`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone })
+                    body: JSON.stringify(payload) // Sends either {phone: "..."} or {telegram: "..."}
                 });
 
                 const result = await response.json();
 
                 if (!response.ok) {
-                    // This will show the REAL error from Airtable on your screen
                     throw new Error(result.details || result.error || 'Unknown Server Error');
                 }
 
-                // Success
-                const msg = result.type === 'UPDATE' ? `👋 Checked In: ${phone}` : `🆕 New Entry: ${phone}`;
+                // Success Message
+                let msg = "";
+                if (result.type === 'UPDATE') {
+                    msg = `✅ Found & Checked: ${result.matchedValue}`;
+                } else {
+                    msg = `🆕 New Entry: ${result.matchedValue}`;
+                }
                 addLog(msg, 'success');
                 
                 document.getElementById('scanNextContainer').classList.remove('hidden');
@@ -256,12 +265,12 @@
                 document.getElementById('statusText').textContent = 'Saved!';
 
             } catch (error) {
-                // Show the specific error message
                 addLog(`❌ Error: ${error.message}`, 'error');
                 scanningEnabled = true; 
                 scannedCodes.clear();
             }
         }
+
         function enableNextScan() {
             scanningEnabled = true;
             scannedCodes.clear();
