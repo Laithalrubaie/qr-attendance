@@ -20,22 +20,19 @@
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     
-    <!-- Header -->
     <div class="bg-indigo-600 text-white p-4 shadow-lg sticky top-0 z-10">
         <div class="flex items-center justify-center max-w-md mx-auto">
             <div class="flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
                 </svg>
-                <h1 class="text-xl font-bold">QR Attendance Scanner</h1>
+                <h1 class="text-xl font-bold">Event Scanner</h1>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
     <div class="max-w-md mx-auto p-4 space-y-4 pb-20">
         
-        <!-- Video Area -->
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
             <div class="relative aspect-video bg-black">
                 <video id="video" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -45,122 +42,98 @@
                     <div class="text-center">
                         <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                         </svg>
-                        <p>Camera Inactive</p>
-                        <p class="text-sm mt-2 opacity-75">Click "Start Camera" below</p>
+                        <p>Camera Paused</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Camera Controls -->
             <div class="p-4 bg-gray-50 flex gap-2">
                 <button id="toggleCamera" onclick="toggleCamera()" 
-                    class="flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                    </svg>
+                    class="flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white shadow-md">
                     <span id="cameraButtonText">Start Camera</span>
                 </button>
                 
                 <button onclick="switchCamera()" id="switchBtn" disabled
-                    class="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg transition">
+                    class="px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-lg transition shadow-md">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                 </button>
             </div>
             
-            <!-- Scan Next Button (Shows after successful scan) -->
             <div id="scanNextContainer" class="hidden p-4 bg-green-50 border-t-2 border-green-500">
                 <button onclick="enableNextScan()" 
                     class="w-full py-4 rounded-lg font-bold text-lg transition flex items-center justify-center gap-3 bg-green-500 hover:bg-green-600 text-white shadow-lg animate-pulse">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                    </svg>
-                    <span>✅ Scan Next Teacher</span>
+                    <span>✅ Scan Next Person</span>
                 </button>
-                <p class="text-center text-sm text-gray-600 mt-2">Ready for the next person!</p>
             </div>
         </div>
 
-        <!-- Status Bar -->
         <div class="bg-white rounded-lg shadow p-3 flex items-center gap-2">
             <div id="statusDot" class="w-3 h-3 rounded-full bg-gray-300"></div>
             <span id="statusText" class="text-sm font-medium text-gray-700">System Ready</span>
         </div>
 
-        <!-- Logs Area -->
-        <div class="bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden" style="height: 400px;">
+        <div class="bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden" style="height: 350px;">
             <div class="p-4 border-b border-gray-200 bg-gray-50">
-                <h2 class="font-semibold text-gray-700">Activity Log</h2>
+                <h2 class="font-semibold text-gray-700">Recent Scans</h2>
             </div>
             
             <div id="logsContainer" class="flex-1 overflow-y-auto p-4 space-y-2">
-                <p class="text-gray-400 text-center py-8">No activity yet...</p>
+                <p class="text-gray-400 text-center py-8 text-sm">Waiting for scans...</p>
             </div>
         </div>
     </div>
 
     <script>
-        // Configuration
-        let CONFIG = {
-            apiUrl: localStorage.getItem('apiUrl') || 'https://qr-attendance-pink.vercel.app/api'
+        // --- CONFIGURATION ---
+        // REPLACE THIS with your actual Vercel/Server URL
+        const CONFIG = {
+            apiUrl: 'https://qr-attendance-pink.vercel.app/api' 
         };
 
-        // State
+        // --- STATE ---
         let cameraActive = false;
         let facingMode = 'environment';
         let stream = null;
         let scanInterval = null;
         let scannedCodes = new Set();
-        let lastScanTime = 0;
-        let scanningEnabled = true; // New: Controls whether we can scan
+        let scanningEnabled = true;
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Logging
+        // --- LOGGING ---
         function addLog(message, type = 'info') {
             const container = document.getElementById('logsContainer');
-            const time = new Date().toLocaleTimeString();
+            const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
             
             const colors = {
-                success: 'bg-green-50 border-green-200',
-                error: 'bg-red-50 border-red-200',
-                warning: 'bg-yellow-50 border-yellow-200',
-                info: 'bg-gray-50 border-gray-200'
+                success: 'bg-green-50 border-green-200 text-green-800',
+                error: 'bg-red-50 border-red-200 text-red-800',
+                info: 'bg-blue-50 border-blue-200 text-blue-800'
             };
 
-            const icons = {
-                success: '<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-                error: '<svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-                warning: '<svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
-                info: ''
-            };
-
+            // Remove placeholder
             if (container.querySelector('.text-gray-400')) {
                 container.innerHTML = '';
             }
 
             const logEntry = document.createElement('div');
-            logEntry.className = `p-3 rounded-lg text-sm border ${colors[type]}`;
+            logEntry.className = `p-3 rounded-lg text-sm border ${colors[type] || colors.info} animate-fade-in-down`;
             logEntry.innerHTML = `
-                <div class="flex items-start gap-2">
-                    ${icons[type]}
-                    <div class="flex-1">
-                        <span class="text-gray-500 text-xs">[${time}]</span>
-                        <p class="text-gray-700 mt-1">${message}</p>
-                    </div>
+                <div class="flex justify-between">
+                    <span class="font-medium">${message}</span>
+                    <span class="text-xs opacity-70">${time}</span>
                 </div>
             `;
             
             container.insertBefore(logEntry, container.firstChild);
-            console.log(`[${time}] ${message}`);
         }
 
-        // Camera Functions
+        // --- CAMERA LOGIC ---
         async function startCamera() {
             try {
                 const constraints = {
@@ -173,21 +146,17 @@
 
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-                cameraActive = true;
-                
-                document.getElementById('cameraPlaceholder').classList.add('hidden');
-                document.getElementById('scannerOverlay').classList.remove('hidden');
-                document.getElementById('toggleCamera').className = 'flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white';
-                document.getElementById('cameraButtonText').textContent = 'Stop Camera';
-                document.getElementById('switchBtn').disabled = false;
-                document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse';
-                document.getElementById('statusText').textContent = 'Scanning Active';
-
-                startScanning();
-                addLog('📸 Camera started successfully', 'success');
+                // Wait for video to actually play to avoid black screen
+                video.onloadedmetadata = () => {
+                    video.play();
+                    cameraActive = true;
+                    updateUI(true);
+                    startScanning();
+                };
             } catch (error) {
-                addLog(`❌ Camera error: ${error.message}`, 'error');
+                addLog(`Camera Error: ${error.message}`, 'error');
                 cameraActive = false;
+                updateUI(false);
             }
         }
 
@@ -196,50 +165,63 @@
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
             }
-            
             video.srcObject = null;
             cameraActive = false;
             stopScanning();
-            
-            document.getElementById('cameraPlaceholder').classList.remove('hidden');
-            document.getElementById('scannerOverlay').classList.add('hidden');
-            document.getElementById('toggleCamera').className = 'flex-1 py-3 rounded-lg font-semibold transition flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white';
-            document.getElementById('cameraButtonText').textContent = 'Start Camera';
-            document.getElementById('switchBtn').disabled = true;
-            document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-gray-300';
-            document.getElementById('statusText').textContent = 'System Ready';
-
-            addLog('📷 Camera stopped', 'info');
+            updateUI(false);
         }
 
         function toggleCamera() {
-            if (cameraActive) {
-                stopCamera();
-            } else {
-                startCamera();
-            }
+            cameraActive ? stopCamera() : startCamera();
         }
 
         function switchCamera() {
             stopCamera();
             facingMode = facingMode === 'environment' ? 'user' : 'environment';
-            setTimeout(startCamera, 100);
+            setTimeout(startCamera, 300);
         }
 
-        // QR Scanning
-        function startScanning() {
-            scanInterval = setInterval(scanQRCode, 200);
-        }
+        function updateUI(isActive) {
+            const overlay = document.getElementById('scannerOverlay');
+            const placeholder = document.getElementById('cameraPlaceholder');
+            const btnText = document.getElementById('cameraButtonText');
+            const btnToggle = document.getElementById('toggleCamera');
+            const btnSwitch = document.getElementById('switchBtn');
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
 
-        function stopScanning() {
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
+            if (isActive) {
+                overlay.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btnText.textContent = 'Stop Camera';
+                btnToggle.classList.replace('bg-green-500', 'bg-red-500');
+                btnToggle.classList.replace('hover:bg-green-600', 'hover:bg-red-600');
+                btnSwitch.disabled = false;
+                statusDot.className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse';
+                statusText.textContent = 'Scanning Active';
+            } else {
+                overlay.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                btnText.textContent = 'Start Camera';
+                btnToggle.classList.replace('bg-red-500', 'bg-green-500');
+                btnToggle.classList.replace('hover:bg-red-600', 'hover:bg-green-600');
+                btnSwitch.disabled = true;
+                statusDot.className = 'w-3 h-3 rounded-full bg-gray-300';
+                statusText.textContent = 'System Ready';
             }
         }
 
-        function scanQRCode() {
-            if (!cameraActive || !video.readyState === video.HAVE_ENOUGH_DATA || !scanningEnabled) return;
+        // --- SCANNING LOGIC ---
+        function startScanning() {
+            scanInterval = setInterval(scanFrame, 200);
+        }
+
+        function stopScanning() {
+            if (scanInterval) clearInterval(scanInterval);
+        }
+
+        function scanFrame() {
+            if (!cameraActive || video.readyState !== video.HAVE_ENOUGH_DATA || !scanningEnabled) return;
 
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -247,165 +229,116 @@
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             
+            // Attempt to find QR code
             if (window.jsQR) {
                 const code = jsQR(imageData.data, imageData.width, imageData.height);
-                if (code) {
-                    processQRCode(code.data);
+                if (code && code.data) {
+                    handleScanSuccess(code.data);
                 }
             }
         }
 
-        function processQRCode(data) {
-            if (!scanningEnabled) return; // Don't process if scanning is disabled
-            
-            const currentTime = Date.now();
-            
-            // No time limit check - just check if we already scanned this exact code
-            if (scannedCodes.has(data)) {
-                return;
-            }
+        // --- DATA PROCESSING ---
+        function handleScanSuccess(data) {
+            if (scannedCodes.has(data)) return; // Prevent duplicate immediate scans
 
-            try {
-                // New QR Format: "اسم الجهة,اسم الاستاذ,المادة,رقم الهاتف"
-                // OR simple: "اسم الاستاذ,رقم الهاتف"
-                
+            // 1. Pause Scanning
+            scanningEnabled = false;
+            document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-yellow-500';
+            document.getElementById('statusText').textContent = 'Processing...';
+
+            let teacherName = "Guest";
+            let phone = "";
+            let organization = "-";
+            let subject = "-";
+
+            // 2. Logic: Decide how to parse
+            if (data.includes(',')) {
+                // CSV Format found (Name, Subject, Phone OR Org, Name, Sub, Phone)
                 const parts = data.split(',').map(s => s.trim());
                 
-                let organization = '';
-                let teacherName = '';
-                let subject = '';
-                let phone = '';
-                
-                if (parts.length === 4) {
-                    // Full format: Organization, Teacher, Subject, Phone
-                    organization = parts[0];
-                    teacherName = parts[1];
-                    subject = parts[2];
-                    phone = parts[3];
-                } else if (parts.length === 3) {
-                    // Could be: Teacher, Subject, Phone OR Organization, Teacher, Phone
-                    // We'll assume: Teacher, Subject, Phone
+                if (parts.length >= 3) {
+                    // Assuming: Teacher Name, Subject, Phone
                     teacherName = parts[0];
                     subject = parts[1];
                     phone = parts[2];
+                    if(parts.length > 3) organization = parts[0]; // Adjust if needed
                 } else if (parts.length === 2) {
-                    // Simple format: Teacher, Phone
+                    // Assuming: Teacher Name, Phone
                     teacherName = parts[0];
                     phone = parts[1];
+                }
+            } else {
+                // No commas found? Assume it's JUST a phone number (Your requirement)
+                // Remove everything that isn't a digit
+                const digits = data.replace(/\D/g, '');
+                if (digits.length > 5) {
+                    phone = digits;
+                    teacherName = "Guest"; // Default name
+                    addLog('📞 Phone number detected', 'info');
                 } else {
-                    addLog('⚠️ Invalid QR code format', 'error');
+                    // Data too short or invalid
+                    addLog('⚠️ Invalid QR Data', 'error');
+                    scanningEnabled = true; // Retry
                     return;
                 }
-                
-                // Handle corrupted phone data
-                if (phone === 'nan' || phone === '') {
-                    phone = teacherName;
-                    teacherName = teacherName.replace(/\d+/g, '').trim();
-                    addLog(`🔧 Repaired phone data`, 'warning');
-                }
-                
-                // Validate required fields
-                if (!teacherName || !phone) {
-                    addLog('⚠️ Missing required data (Teacher name or Phone)', 'error');
-                    return;
-                }
+            }
 
-                addLog(`🔎 Found: ${teacherName}${subject ? ` (${subject})` : ''}`, 'info');
-                
-                // Disable scanning immediately
-                scanningEnabled = false;
-                document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-yellow-500';
-                document.getElementById('statusText').textContent = 'Processing... Please wait';
-                
-                recordAttendance(teacherName, phone, organization, subject);                
-                scannedCodes.add(data);
-                lastScanTime = currentTime;
-                
+            // 3. Send to Backend
+            scannedCodes.add(data);
+            sendToBackend(teacherName, phone, organization, subject);
+        }
+
+        // --- API COMMUNICATION ---
+        async function sendToBackend(name, phoneRaw, organization, subject) {
+            // Format phone for WhatsApp/DB (+964...)
+            let phone = phoneRaw.replace(/\D/g, '');
+            if (phone.length <= 11) {
+                 phone = phone.startsWith('0') ? '+964' + phone.substring(1) : '+964' + phone;
+            } else {
+                phone = '+' + phone;
+            }
+
+            try {
+                const response = await fetch(`${CONFIG.apiUrl}/record`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        teacherName: name,
+                        phone: phone, 
+                        organization: organization, 
+                        subject: subject, 
+                        timestamp: new Date().toISOString(), 
+                        status: 'ARRIVED' 
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    addLog(`✅ Saved: ${name}`, 'success');
+                    
+                    // Show "Scan Next" Button
+                    document.getElementById('scanNextContainer').classList.remove('hidden');
+                    document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-green-500';
+                    document.getElementById('statusText').textContent = 'Saved!';
+                } else {
+                    throw new Error('Server rejected data');
+                }
             } catch (error) {
-                addLog(`⚠️ Parse error: ${error.message}`, 'error');
+                addLog(`❌ Upload Failed: ${error.message}`, 'error');
+                scanningEnabled = true; // Allow retry if failed
+                scannedCodes.clear();
             }
         }
 
         function enableNextScan() {
             scanningEnabled = true;
-            scannedCodes.clear(); // Clear history so we can scan the same QR again
+            scannedCodes.clear(); // Reset duplicates history
             document.getElementById('scanNextContainer').classList.add('hidden');
+            document.getElementById('statusText').textContent = 'Scanning Active';
             document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-green-500 animate-pulse';
-            document.getElementById('statusText').textContent = 'Ready - Scan Next QR Code';
-            addLog('👉 Ready for next scan!', 'info');
+            addLog('waiting for next...', 'info');
         }
-
-        // Phone Formatting
-        function formatPhone(phoneRaw) {
-            let phone = phoneRaw.replace(/\D/g, '');
-            
-            if (phone.length <= 11) {
-                if (phone.startsWith('0')) {
-                    phone = '+964' + phone.substring(1);
-                } else {
-                    phone = '+964' + phone;
-                }
-            } else {
-                phone = '+' + phone;
-            }
-            
-            return phone;
-        }
-
-        // Record Attendance
-        async function recordAttendance(name, phoneRaw, organization, subject) {
-    if (!CONFIG.apiUrl) {
-        addLog('⚠️ Please configure API URL', 'warning');
-        return;
-    }
-
-    const phone = formatPhone(phoneRaw);
-    const timestamp = new Date().toISOString();
-
-    addLog(`⚙️ Processing: ${name}`, 'info');
-
-    try {
-        const apiEndpoint = `${CONFIG.apiUrl}/record`;
-        
-        const response = await fetch(apiEndpoint, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ 
-                teacherName: name, // This 'name' is the variable at the top of the function
-                phone: phone, 
-                organization: organization, 
-                subject: subject, 
-                timestamp: timestamp, 
-                status: 'ARRIVED' 
-            })
-        });
-
-        if (response.ok) {
-            const result = await response.json();
-            // Use 'name' here because that is what this function calls the teacher
-            addLog(`✅ Recorded: ${name} at ${result.time}`, 'success');
-            
-            if (organization && organization !== '-') addLog(`🏢 Org: ${organization}`, 'info');
-            
-            document.getElementById('scanNextContainer').classList.remove('hidden');
-            document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-green-500';
-            document.getElementById('statusText').textContent = 'Success! Ready for next';
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to record');
-        }
-    } catch (error) {
-        addLog(`❌ Error: ${error.message}`, 'error');
-        scanningEnabled = true;
-    }
-}
-
-        // Initialize
-        addLog('🔄 System initialized and ready!', 'success');
-        addLog('📡 API configured for Baghdad timezone', 'info');
     </script>
 </body>
 </html>
