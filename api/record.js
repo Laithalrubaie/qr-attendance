@@ -23,15 +23,11 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Get Time
         const time = new Date().toLocaleTimeString('en-US', { 
             hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Baghdad' 
         });
 
-        // ---------------------------------------------------------
-        // STEP 1: SEARCH FOR THE PHONE NUMBER
-        // ---------------------------------------------------------
-        // We use 'filterByFormula' to find the row where {Phone} matches the scanned phone
+        // 1. SEARCH
         const searchFormula = encodeURIComponent(`{Phone}='${phone}'`);
         const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?filterByFormula=${searchFormula}`;
 
@@ -45,44 +41,38 @@ module.exports = async (req, res) => {
 
         const searchData = await searchResponse.json();
 
-        // ---------------------------------------------------------
-        // STEP 2: CHECK IF FOUND
-        // ---------------------------------------------------------
-        
+        // 2. CHECK & UPDATE
         if (searchData.records && searchData.records.length > 0) {
-            // === FOUND! UPDATE THE EXISTING ROW ===
-            const recordId = searchData.records[0].id; // Get the ID of the row we found
+            // === FOUND! ===
+            const recordId = searchData.records[0].id;
             const existingName = searchData.records[0].fields.Name || "Unknown";
 
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
             
             await fetch(updateUrl, {
-                method: 'PATCH', // PATCH means "Update"
+                method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     fields: {
-                        "Status": "✅ ARRIVED", // This puts the checkmark in Col C
+                        "Status": true, // <--- This ticks the checkbox
                         "Time": time
                     }
                 })
             });
 
-            console.log(`✅ Updated existing record for: ${existingName}`);
+            console.log(`✅ Checked box for: ${existingName}`);
             
             return res.status(200).json({ 
                 success: true, 
-                message: `Welcome back, ${existingName}!`,
+                message: `Checked in: ${existingName}`,
                 type: 'UPDATE'
             });
 
         } else {
-            // === NOT FOUND! CREATE NEW RECORD (OPTIONAL) ===
-            // If the phone number isn't in your list, we add them as a new guest
-            // so you don't lose the data.
-            
+            // === NOT FOUND (NEW GUEST) ===
             const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
             
             await fetch(createUrl, {
@@ -95,13 +85,11 @@ module.exports = async (req, res) => {
                     fields: {
                         "Phone": phone,
                         "Name": "New Guest",
-                        "Status": "✅ NEW WALK-IN",
+                        "Status": true, // <--- This ticks the checkbox
                         "Time": time
                     }
                 })
             });
-
-            console.log(`✅ Created new record for unlisted phone: ${phone}`);
 
             return res.status(200).json({ 
                 success: true, 
