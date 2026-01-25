@@ -1,8 +1,8 @@
-// api/record.js - SEARCH & UPDATE VERSION
+// api/record.js - SMART SEARCH VERSION
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-const AIRTABLE_TABLE_NAME = 'Table'; 
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID; // Must be 'app...'
+const AIRTABLE_TABLE_NAME = 'tblh2cBRNxBfXHgF5'; 
 
 module.exports = async (req, res) => {
     // CORS Setup
