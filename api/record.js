@@ -1,7 +1,12 @@
-// api/record.js - SMART SEARCH VERSION
+// api/record.js - FIXED TABLE NAME VERSION
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID; // Must be 'app...'
+
+// Your Base ID (from your URL)
+const AIRTABLE_BASE_ID = 'appJFX8HETEg4xsud'; 
+
+// ✅ CHANGED: Using the name "Table" exactly as you said
+// If it is "Table 1", change this line to: const AIRTABLE_TABLE_NAME = 'Table 1';
 const AIRTABLE_TABLE_NAME = 'Table'; 
 
 module.exports = async (req, res) => {
@@ -14,27 +19,21 @@ module.exports = async (req, res) => {
     if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
     let { phone } = req.body;
-
     if (!phone) return res.status(400).json({ error: 'Phone required' });
+
+    console.log(`🚀 Processing phone: ${phone} for Table: ${AIRTABLE_TABLE_NAME}`);
 
     try {
         const time = new Date().toLocaleTimeString('en-US', { 
             hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Baghdad' 
         });
 
-        // --- SMART SEARCH LOGIC ---
-        // 1. Remove leading zero for the search (turn '0770...' into '770...')
-        //    This helps match numbers stored as integers or text without zero.
+        // 1. SMART SEARCH
         const searchPhone = phone.startsWith('0') ? phone.substring(1) : phone;
-
-        // 2. Search Formula: Look for the number exactly OR contained in the text
-        //    SEARCH('770123456', {Phone}) checks if the number exists inside the cell
         const formula = `SEARCH('${searchPhone}', {Phone})`;
         const searchFormula = encodeURIComponent(formula);
 
         const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?filterByFormula=${searchFormula}`;
-
-        console.log(`🔎 Searching for: ${searchPhone}`);
 
         const searchResponse = await fetch(searchUrl, {
             method: 'GET',
@@ -46,19 +45,19 @@ module.exports = async (req, res) => {
 
         const searchData = await searchResponse.json();
 
-        // Check for Airtable Errors (like wrong Base ID)
+        // ❌ CATCH PERMISSION/NAME ERRORS
         if (searchData.error) {
-            throw new Error(`Airtable Error: ${searchData.error.message}`);
+            console.error('❌ Airtable Error:', searchData.error);
+            // This sends the specific error back to your phone screen
+            throw new Error(`Airtable Error: ${searchData.error.message} (Check Table Name!)`);
         }
 
-        // 3. CHECK & UPDATE
+        // 2. CHECK & UPDATE
         if (searchData.records && searchData.records.length > 0) {
-            // Found it!
             const recordId = searchData.records[0].id;
             const existingName = searchData.records[0].fields.Name || "Unknown";
 
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
-            
             await fetch(updateUrl, {
                 method: 'PATCH',
                 headers: {
@@ -66,27 +65,15 @@ module.exports = async (req, res) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    fields: {
-                        "Status": true,
-                        "Time": time
-                    }
+                    fields: { "Status": true, "Time": time }
                 })
             });
 
-            console.log(`✅ Found & Updated: ${existingName}`);
-            
-            return res.status(200).json({ 
-                success: true, 
-                message: `Checked in: ${existingName}`,
-                type: 'UPDATE'
-            });
+            return res.status(200).json({ success: true, message: `Checked in: ${existingName}`, type: 'UPDATE' });
 
         } else {
-            // Not Found
-            console.log(`⚠️ Not found, creating new: ${phone}`);
-            
+            // Create New
             const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
-            
             await fetch(createUrl, {
                 method: 'POST',
                 headers: {
@@ -103,15 +90,10 @@ module.exports = async (req, res) => {
                 })
             });
 
-            return res.status(200).json({ 
-                success: true, 
-                message: 'New guest recorded',
-                type: 'CREATE'
-            });
+            return res.status(200).json({ success: true, message: 'New guest recorded', type: 'CREATE' });
         }
 
     } catch (error) {
-        console.error('Server Error:', error);
-        return res.status(500).json({ error: 'System Error', details: error.message });
+        return res.status(500).json({ error: error.message });
     }
 };
