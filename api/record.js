@@ -1,3 +1,4 @@
+
 // api/record.js - PHONE + TELEGRAM SUPPORT
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -89,7 +90,7 @@ module.exports = async (req, res) => {
                 },
                 body: JSON.stringify({
                     fields: { 
-                        "Status": true, 
+                        "Arrived": true, 
                         "Time": time 
                     }
                 })
@@ -107,7 +108,7 @@ module.exports = async (req, res) => {
             // We need to decide which field to fill (Phone or TG)
             let newFields = {
                 "Name": "New Guest",
-                "Status": true,
+                "Arrived": true,
                 "Time": time
             };
 
