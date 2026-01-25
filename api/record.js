@@ -2,7 +2,7 @@
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-const AIRTABLE_TABLE_NAME = 'Attendance Klawat Version'; // Ensure your table is named 'Attendance'
+const AIRTABLE_TABLE_NAME = 'Table 1'; 
 
 module.exports = async (req, res) => {
     // CORS Setup
