@@ -1,12 +1,7 @@
-// api/record.js - FIXED TABLE NAME VERSION
+// api/record.js - PHONE + TELEGRAM SUPPORT
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-
-// Your Base ID (from your URL)
 const AIRTABLE_BASE_ID = 'appJFX8HETEg4xsud'; 
-
-// ✅ CHANGED: Using the name "Table" exactly as you said
-// If it is "Table 1", change this line to: const AIRTABLE_TABLE_NAME = 'Table 1';
 const AIRTABLE_TABLE_NAME = 'Table'; 
 
 module.exports = async (req, res) => {
@@ -18,22 +13,50 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') { res.status(200).end(); return; }
 
-    let { phone } = req.body;
-    if (!phone) return res.status(400).json({ error: 'Phone required' });
+    const { phone, telegram } = req.body;
+    let searchFormula = '';
+    let searchValue = '';
+    let searchField = '';
 
-    console.log(`🚀 Processing phone: ${phone} for Table: ${AIRTABLE_TABLE_NAME}`);
+    // --- LOGIC: Determine if we are searching for Phone or Telegram ---
+    
+    if (telegram) {
+        // === TELEGRAM LOGIC ===
+        // Look for exact match in "TG" column
+        searchValue = telegram;
+        searchField = 'TG';
+        // Formula: {TG} = '@username'
+        searchFormula = `{TG}='${telegram}'`;
+        console.log(`🔎 Searching Telegram: ${telegram}`);
+
+    } else if (phone) {
+        // === PHONE LOGIC (CONTAINS) ===
+        // 1. Clean the number to find the "Core" digits
+        // Remove 964 if present, remove leading 0
+        let corePhone = phone;
+        if (corePhone.startsWith('964')) corePhone = corePhone.substring(3);
+        if (corePhone.startsWith('0')) corePhone = corePhone.substring(1);
+        
+        searchValue = phone; // Keep original for saving if new
+        searchField = 'Phone';
+        
+        // Formula: SEARCH('770123456', {Phone})
+        // This finds the row if '770...' is INSIDE the cell (e.g. cell has "0770...")
+        searchFormula = `SEARCH('${corePhone}', {Phone})`;
+        console.log(`🔎 Searching Phone (Contains): ${corePhone}`);
+
+    } else {
+        return res.status(400).json({ error: 'No Phone or Telegram data found' });
+    }
 
     try {
         const time = new Date().toLocaleTimeString('en-US', { 
             hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Baghdad' 
         });
 
-        // 1. SMART SEARCH
-        const searchPhone = phone.startsWith('0') ? phone.substring(1) : phone;
-        const formula = `SEARCH('${searchPhone}', {Phone})`;
-        const searchFormula = encodeURIComponent(formula);
-
-        const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?filterByFormula=${searchFormula}`;
+        // 1. PERFORM SEARCH
+        const encodedFormula = encodeURIComponent(searchFormula);
+        const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?filterByFormula=${encodedFormula}`;
 
         const searchResponse = await fetch(searchUrl, {
             method: 'GET',
@@ -45,18 +68,18 @@ module.exports = async (req, res) => {
 
         const searchData = await searchResponse.json();
 
-        // ❌ CATCH PERMISSION/NAME ERRORS
         if (searchData.error) {
             console.error('❌ Airtable Error:', searchData.error);
-            // This sends the specific error back to your phone screen
-            throw new Error(`Airtable Error: ${searchData.error.message} (Check Table Name!)`);
+            throw new Error(`Airtable Error: ${searchData.error.message}`);
         }
 
-        // 2. CHECK & UPDATE
+        // 2. CHECK RESULTS
         if (searchData.records && searchData.records.length > 0) {
+            // === FOUND MATCH ===
             const recordId = searchData.records[0].id;
             const existingName = searchData.records[0].fields.Name || "Unknown";
 
+            // Update Status to Checked
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
             await fetch(updateUrl, {
                 method: 'PATCH',
@@ -65,14 +88,37 @@ module.exports = async (req, res) => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    fields: { "Status": true, "Time": time }
+                    fields: { 
+                        "Status": true, 
+                        "Time": time 
+                    }
                 })
             });
 
-            return res.status(200).json({ success: true, message: `Checked in: ${existingName}`, type: 'UPDATE' });
+            return res.status(200).json({ 
+                success: true, 
+                message: `Checked in: ${existingName}`,
+                matchedValue: existingName,
+                type: 'UPDATE' 
+            });
 
         } else {
-            // Create New
+            // === NOT FOUND (CREATE NEW) ===
+            // We need to decide which field to fill (Phone or TG)
+            let newFields = {
+                "Name": "New Guest",
+                "Status": true,
+                "Time": time
+            };
+
+            if (telegram) {
+                newFields["TG"] = telegram;   // Fill TG column
+                newFields["Phone"] = "-";     // Leave phone empty/dash
+            } else {
+                newFields["Phone"] = searchValue; // Fill Phone column
+                newFields["TG"] = "-";            // Leave TG empty/dash
+            }
+
             const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
             await fetch(createUrl, {
                 method: 'POST',
@@ -80,17 +126,15 @@ module.exports = async (req, res) => {
                     'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    fields: {
-                        "Phone": phone,
-                        "Name": "New Guest",
-                        "Status": true,
-                        "Time": time
-                    }
-                })
+                body: JSON.stringify({ fields: newFields })
             });
 
-            return res.status(200).json({ success: true, message: 'New guest recorded', type: 'CREATE' });
+            return res.status(200).json({ 
+                success: true, 
+                message: 'New guest recorded',
+                matchedValue: searchValue,
+                type: 'CREATE' 
+            });
         }
 
     } catch (error) {
