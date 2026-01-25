@@ -1,25 +1,14 @@
-const { google } = require('googleapis');
+// api/record.js - SEARCH & UPDATE VERSION
 
-async function getGoogleSheetsClient() {
-    const auth = new google.auth.GoogleAuth({
-        credentials: {
-            type: 'service_account',
-            project_id: process.env.GOOGLE_PROJECT_ID,
-            private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            client_id: process.env.GOOGLE_CLIENT_ID,
-        },
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    return google.sheets({ version: 'v4', auth });
-}
+const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+const AIRTABLE_TABLE_NAME = 'Attendance'; // Ensure your table is named 'Attendance'
 
 module.exports = async (req, res) => {
-    // CORS Headers
+    // CORS Setup
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
+    res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
@@ -27,53 +16,102 @@ module.exports = async (req, res) => {
         return;
     }
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
-
-    // 1. EXTRACT ONLY PHONE
-    // We removed teacherName, status, organization, subject
     const { phone } = req.body;
 
-    // 2. VALIDATION
     if (!phone) {
         return res.status(400).json({ error: 'Phone number is required' });
     }
 
     try {
-        const date = new Date().toLocaleDateString('en-GB', { timeZone: 'Asia/Baghdad' });
+        // Get Time
         const time = new Date().toLocaleTimeString('en-US', { 
-            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'Asia/Baghdad' 
+            hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Baghdad' 
         });
-        
-        const sheets = await getGoogleSheetsClient();
-        
-        // 3. SAVE TO GOOGLE SHEETS
-        // We now save only 3 columns: [Phone, Date, Time]
-        await sheets.spreadsheets.values.append({
-            spreadsheetId: process.env.GOOGLE_SHEET_ID,
-            range: 'Sheet1!A:C', 
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: [[
-                    phone,  // Column A: Phone
-                    date,   // Column B: Date
-                    time    // Column C: Time
-                ]]
+
+        // ---------------------------------------------------------
+        // STEP 1: SEARCH FOR THE PHONE NUMBER
+        // ---------------------------------------------------------
+        // We use 'filterByFormula' to find the row where {Phone} matches the scanned phone
+        const searchFormula = encodeURIComponent(`{Phone}='${phone}'`);
+        const searchUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}?filterByFormula=${searchFormula}`;
+
+        const searchResponse = await fetch(searchUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+                'Content-Type': 'application/json'
             }
         });
 
-        console.log(`✅ Recorded: ${phone} at ${time}`);
+        const searchData = await searchResponse.json();
 
-        return res.status(200).json({ 
-            success: true,
-            message: 'Recorded',
-            phone,
-            time 
-        });
+        // ---------------------------------------------------------
+        // STEP 2: CHECK IF FOUND
+        // ---------------------------------------------------------
+        
+        if (searchData.records && searchData.records.length > 0) {
+            // === FOUND! UPDATE THE EXISTING ROW ===
+            const recordId = searchData.records[0].id; // Get the ID of the row we found
+            const existingName = searchData.records[0].fields.Name || "Unknown";
+
+            const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
+            
+            await fetch(updateUrl, {
+                method: 'PATCH', // PATCH means "Update"
+                headers: {
+                    'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fields: {
+                        "Status": "✅ ARRIVED", // This puts the checkmark in Col C
+                        "Time": time
+                    }
+                })
+            });
+
+            console.log(`✅ Updated existing record for: ${existingName}`);
+            
+            return res.status(200).json({ 
+                success: true, 
+                message: `Welcome back, ${existingName}!`,
+                type: 'UPDATE'
+            });
+
+        } else {
+            // === NOT FOUND! CREATE NEW RECORD (OPTIONAL) ===
+            // If the phone number isn't in your list, we add them as a new guest
+            // so you don't lose the data.
+            
+            const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
+            
+            await fetch(createUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    fields: {
+                        "Phone": phone,
+                        "Name": "New Guest",
+                        "Status": "✅ NEW WALK-IN",
+                        "Time": time
+                    }
+                })
+            });
+
+            console.log(`✅ Created new record for unlisted phone: ${phone}`);
+
+            return res.status(200).json({ 
+                success: true, 
+                message: 'New guest recorded',
+                type: 'CREATE'
+            });
+        }
 
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(500).json({ error: 'Failed to record', details: error.message });
+        console.error('Airtable Error:', error);
+        return res.status(500).json({ error: 'System Error', details: error.message });
     }
 };
