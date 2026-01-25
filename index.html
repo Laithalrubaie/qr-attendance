@@ -85,7 +85,8 @@
             </div>
         </div>
     </div>
-<script>
+
+    <script>
         // --- CONFIGURATION ---
         const CONFIG = {
             apiUrl: 'https://qr-attendance-pink.vercel.app/api' 
@@ -102,6 +103,28 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+
+        // --- AUDIO (BEEP SOUND) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playScanSound() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // 1200Hz Beep
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
 
         // --- LOGGING ---
         function addLog(message, type = 'info') {
@@ -129,6 +152,11 @@
 
         // --- CAMERA LOGIC ---
         async function startCamera() {
+            // Wake up audio context on user gesture (Mobile requirement)
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             try {
                 const constraints = { video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -207,24 +235,24 @@
             }
         }
 
-        // --- DATA PROCESSING (UPDATED) ---
+        // --- DATA PROCESSING ---
         function handleScanSuccess(data) {
             if (scannedCodes.has(data)) return; 
 
-            let payload = {}; // Logic determines what we send
+            // 🎵 PLAY BEEP!
+            playScanSound();
 
-            // CASE 1: TELEGRAM (@username)
+            let payload = {}; 
+
+            // CASE 1: TELEGRAM
             if (data.startsWith('@')) {
                 addLog(`🔹 Telegram detected: ${data}`, 'info');
                 payload = { telegram: data };
             } 
-            // CASE 2: PHONE NUMBER (077..., 77..., +964...)
+            // CASE 2: PHONE
             else {
-                // Keep only numbers
                 let digits = data.replace(/\D/g, '');
-                if (digits.length < 6) return; // Too short to be a phone
-                
-                // We send the raw digits. The backend will handle the "Contains" logic.
+                if (digits.length < 6) return; 
                 payload = { phone: digits };
             }
 
@@ -242,7 +270,7 @@
                 const response = await fetch(`${CONFIG.apiUrl}/record`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload) // Sends either {phone: "..."} or {telegram: "..."}
+                    body: JSON.stringify(payload)
                 });
 
                 const result = await response.json();
