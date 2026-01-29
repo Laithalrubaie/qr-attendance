@@ -1,4 +1,4 @@
-// api/record.js - PHONE + TELEGRAM SUPPORT
+// api/record.js - PHONE + TELEGRAM SUPPORT + FIXED TIME COLUMN
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = 'app4viasf1twQh1aW'; 
@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
     } else if (phone) {
         // === PHONE LOGIC (CONTAINS) ===
         let corePhone = phone;
+        // Clean phone number for better matching
         if (corePhone.startsWith('964')) corePhone = corePhone.substring(3);
         if (corePhone.startsWith('0')) corePhone = corePhone.substring(1);
         
@@ -88,7 +89,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     fields: { 
                         "Arrived": true, 
-                        "Arrived At": time // Changed from "Arrived At" to "Time"
+                        "Time": time // UPDATED: Matches your new column header "Time"
                     }
                 })
             });
@@ -97,13 +98,13 @@ module.exports = async (req, res) => {
                 success: true, 
                 message: `Checked in: ${existingName}`,
                 type: 'UPDATE',
-                // Return data in the specific order: Name | Phone | TG | Arrived | Time
+                // Return data in the specific order needed by frontend
                 record: {
                     "Name": existingName,
                     "Phone": displayPhone,
                     "TG": displayTG,
                     "Arrived": true,
-                    "Arrived At": time
+                    "Time": time
                 }
             });
 
@@ -113,7 +114,7 @@ module.exports = async (req, res) => {
             let newFields = {
                 "Name": "New Guest",
                 "Arrived": true,
-                "Arrived At": time // Changed from "Arrived At" to "Time"
+                "Time": time // UPDATED: Matches your new column header "Time"
             };
 
             if (telegram) {
@@ -138,13 +139,13 @@ module.exports = async (req, res) => {
                 success: true, 
                 message: 'New guest recorded',
                 type: 'CREATE',
-                // Return data in the specific order: Name | Phone | TG | Arrived | Time
+                // Return data in the specific order needed by frontend
                 record: {
                     "Name": newFields["Name"],
                     "Phone": newFields["Phone"],
                     "TG": newFields["TG"],
                     "Arrived": true,
-                    "Arrived At": time
+                    "Time": time
                 }
             });
         }
