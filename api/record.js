@@ -1,4 +1,4 @@
-// api/record.js - PHONE + TELEGRAM SUPPORT + FIXED TIME COLUMN
+// api/record.js - PHONE + TELEGRAM SUPPORT + MATCHED VALUE FIX
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = 'app4viasf1twQh1aW'; 
@@ -18,27 +18,16 @@ module.exports = async (req, res) => {
     let searchValue = '';
     
     // --- LOGIC: Determine if we are searching for Phone or Telegram ---
-    
     if (telegram) {
-        // === TELEGRAM LOGIC ===
         searchValue = telegram;
-        // Formula: {TG} = '@username'
         searchFormula = `{TG}='${telegram}'`;
-        console.log(`🔎 Searching Telegram: ${telegram}`);
-
     } else if (phone) {
-        // === PHONE LOGIC (CONTAINS) ===
         let corePhone = phone;
-        // Clean phone number for better matching
         if (corePhone.startsWith('964')) corePhone = corePhone.substring(3);
         if (corePhone.startsWith('0')) corePhone = corePhone.substring(1);
         
         searchValue = phone; 
-        
-        // Formula: SEARCH('770123456', {Phone})
         searchFormula = `SEARCH('${corePhone}', {Phone})`;
-        console.log(`🔎 Searching Phone (Contains): ${corePhone}`);
-
     } else {
         return res.status(400).json({ error: 'No Phone or Telegram data found' });
     }
@@ -78,7 +67,7 @@ module.exports = async (req, res) => {
             const displayPhone = existingFields.Phone || phone || "-";
             const displayTG = existingFields.TG || telegram || "-";
 
-            // Update Status to Checked
+            // Update Status
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
             await fetch(updateUrl, {
                 method: 'PATCH',
@@ -89,7 +78,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     fields: { 
                         "Arrived": true, 
-                        "Time": time // UPDATED: Matches your new column header "Time"
+                        "Time": time 
                     }
                 })
             });
@@ -97,8 +86,8 @@ module.exports = async (req, res) => {
             return res.status(200).json({ 
                 success: true, 
                 message: `Checked in: ${existingName}`,
+                matchedValue: existingName, // <--- THIS WAS MISSING
                 type: 'UPDATE',
-                // Return data in the specific order needed by frontend
                 record: {
                     "Name": existingName,
                     "Phone": displayPhone,
@@ -110,11 +99,10 @@ module.exports = async (req, res) => {
 
         } else {
             // === NOT FOUND (CREATE NEW) ===
-            
             let newFields = {
                 "Name": "New Guest",
                 "Arrived": true,
-                "Time": time // UPDATED: Matches your new column header "Time"
+                "Time": time
             };
 
             if (telegram) {
@@ -138,8 +126,8 @@ module.exports = async (req, res) => {
             return res.status(200).json({ 
                 success: true, 
                 message: 'New guest recorded',
+                matchedValue: newFields["Name"], // <--- THIS WAS MISSING
                 type: 'CREATE',
-                // Return data in the specific order needed by frontend
                 record: {
                     "Name": newFields["Name"],
                     "Phone": newFields["Phone"],
