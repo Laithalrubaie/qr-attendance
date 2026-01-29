@@ -2,8 +2,8 @@
 // api/record.js - PHONE + TELEGRAM SUPPORT
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
-const AIRTABLE_BASE_ID = 'appJFX8HETEg4xsud'; 
-const AIRTABLE_TABLE_NAME = 'Table'; 
+const AIRTABLE_BASE_ID = 'app4viasf1twQh1aW'; 
+const AIRTABLE_TABLE_NAME = 'QR Code Scanner'; 
 
 module.exports = async (req, res) => {
     // CORS Setup
