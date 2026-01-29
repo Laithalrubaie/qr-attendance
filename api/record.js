@@ -91,7 +91,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     fields: { 
                         "Arrived": true, 
-                        "Time": time 
+                        "Arrived At": time 
                     }
                 })
             });
@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
             let newFields = {
                 "Name": "New Guest",
                 "Arrived": true,
-                "Time": time
+                "Arrived At": time
             };
 
             if (telegram) {
