@@ -1,4 +1,4 @@
-// api/record.js - PHONE + TELEGRAM SUPPORT + MATCHED VALUE FIX
+// api/record.js - WITH ERROR CHECKING FOR UPDATES
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
 const AIRTABLE_BASE_ID = 'app4viasf1twQh1aW'; 
@@ -52,8 +52,8 @@ module.exports = async (req, res) => {
         const searchData = await searchResponse.json();
 
         if (searchData.error) {
-            console.error('❌ Airtable Error:', searchData.error);
-            throw new Error(`Airtable Error: ${searchData.error.message}`);
+            console.error('❌ Airtable Search Error:', searchData.error);
+            throw new Error(`Airtable Search Error: ${searchData.error.message}`);
         }
 
         // 2. CHECK RESULTS
@@ -67,9 +67,10 @@ module.exports = async (req, res) => {
             const displayPhone = existingFields.Phone || phone || "-";
             const displayTG = existingFields.TG || telegram || "-";
 
-            // Update Status
+            // 3. UPDATE STATUS (Now with Error Checking!)
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
-            await fetch(updateUrl, {
+            
+            const updateResponse = await fetch(updateUrl, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -83,10 +84,18 @@ module.exports = async (req, res) => {
                 })
             });
 
+            const updateResult = await updateResponse.json();
+
+            // <--- CRITICAL FIX: CHECK IF UPDATE FAILED --->
+            if (updateResult.error) {
+                console.error("❌ Update Failed:", updateResult.error);
+                throw new Error(`Update Failed: ${updateResult.error.message} (Check Column Types)`);
+            }
+
             return res.status(200).json({ 
                 success: true, 
                 message: `Checked in: ${existingName}`,
-                matchedValue: existingName, // <--- THIS WAS MISSING
+                matchedValue: existingName,
                 type: 'UPDATE',
                 record: {
                     "Name": existingName,
@@ -114,7 +123,7 @@ module.exports = async (req, res) => {
             }
 
             const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
-            await fetch(createUrl, {
+            const createResponse = await fetch(createUrl, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
@@ -123,10 +132,17 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({ fields: newFields })
             });
 
+            const createResult = await createResponse.json();
+
+            if (createResult.error) {
+                 console.error("❌ Create Failed:", createResult.error);
+                 throw new Error(`Create Failed: ${createResult.error.message}`);
+            }
+
             return res.status(200).json({ 
                 success: true, 
                 message: 'New guest recorded',
-                matchedValue: newFields["Name"], // <--- THIS WAS MISSING
+                matchedValue: newFields["Name"],
                 type: 'CREATE',
                 record: {
                     "Name": newFields["Name"],
