@@ -88,7 +88,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     fields: { 
                         "Arrived": true, 
-                        "Time": time // Changed from "Arrived At" to "Time"
+                        "Arrived At": time // Changed from "Arrived At" to "Time"
                     }
                 })
             });
@@ -103,7 +103,7 @@ module.exports = async (req, res) => {
                     "Phone": displayPhone,
                     "TG": displayTG,
                     "Arrived": true,
-                    "Time": time
+                    "Arrived At": time
                 }
             });
 
@@ -113,7 +113,7 @@ module.exports = async (req, res) => {
             let newFields = {
                 "Name": "New Guest",
                 "Arrived": true,
-                "Time": time // Changed from "Arrived At" to "Time"
+                "Arrived At": time // Changed from "Arrived At" to "Time"
             };
 
             if (telegram) {
@@ -144,7 +144,7 @@ module.exports = async (req, res) => {
                     "Phone": newFields["Phone"],
                     "TG": newFields["TG"],
                     "Arrived": true,
-                    "Time": time
+                    "Arrived At": time
                 }
             });
         }
