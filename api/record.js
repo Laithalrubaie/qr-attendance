@@ -1,4 +1,3 @@
-
 // api/record.js - PHONE + TELEGRAM SUPPORT
 
 const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
@@ -17,32 +16,25 @@ module.exports = async (req, res) => {
     const { phone, telegram } = req.body;
     let searchFormula = '';
     let searchValue = '';
-    let searchField = '';
-
+    
     // --- LOGIC: Determine if we are searching for Phone or Telegram ---
     
     if (telegram) {
         // === TELEGRAM LOGIC ===
-        // Look for exact match in "TG" column
         searchValue = telegram;
-        searchField = 'TG';
         // Formula: {TG} = '@username'
         searchFormula = `{TG}='${telegram}'`;
         console.log(`🔎 Searching Telegram: ${telegram}`);
 
     } else if (phone) {
         // === PHONE LOGIC (CONTAINS) ===
-        // 1. Clean the number to find the "Core" digits
-        // Remove 964 if present, remove leading 0
         let corePhone = phone;
         if (corePhone.startsWith('964')) corePhone = corePhone.substring(3);
         if (corePhone.startsWith('0')) corePhone = corePhone.substring(1);
         
-        searchValue = phone; // Keep original for saving if new
-        searchField = 'Phone';
+        searchValue = phone; 
         
         // Formula: SEARCH('770123456', {Phone})
-        // This finds the row if '770...' is INSIDE the cell (e.g. cell has "0770...")
         searchFormula = `SEARCH('${corePhone}', {Phone})`;
         console.log(`🔎 Searching Phone (Contains): ${corePhone}`);
 
@@ -78,7 +70,12 @@ module.exports = async (req, res) => {
         if (searchData.records && searchData.records.length > 0) {
             // === FOUND MATCH ===
             const recordId = searchData.records[0].id;
-            const existingName = searchData.records[0].fields.Name || "Unknown";
+            const existingFields = searchData.records[0].fields;
+            const existingName = existingFields.Name || "Unknown";
+            
+            // Determine existing Phone/TG to return complete data
+            const displayPhone = existingFields.Phone || phone || "-";
+            const displayTG = existingFields.TG || telegram || "-";
 
             // Update Status to Checked
             const updateUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}/${recordId}`;
@@ -91,7 +88,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     fields: { 
                         "Arrived": true, 
-                        "Arrived At": time 
+                        "Time": time // Changed from "Arrived At" to "Time"
                     }
                 })
             });
@@ -99,25 +96,32 @@ module.exports = async (req, res) => {
             return res.status(200).json({ 
                 success: true, 
                 message: `Checked in: ${existingName}`,
-                matchedValue: existingName,
-                type: 'UPDATE' 
+                type: 'UPDATE',
+                // Return data in the specific order: Name | Phone | TG | Arrived | Time
+                record: {
+                    "Name": existingName,
+                    "Phone": displayPhone,
+                    "TG": displayTG,
+                    "Arrived": true,
+                    "Time": time
+                }
             });
 
         } else {
             // === NOT FOUND (CREATE NEW) ===
-            // We need to decide which field to fill (Phone or TG)
+            
             let newFields = {
                 "Name": "New Guest",
                 "Arrived": true,
-                "Arrived At": time
+                "Time": time // Changed from "Arrived At" to "Time"
             };
 
             if (telegram) {
-                newFields["TG"] = telegram;   // Fill TG column
-                newFields["Phone"] = "-";     // Leave phone empty/dash
+                newFields["TG"] = telegram;
+                newFields["Phone"] = "-";
             } else {
-                newFields["Phone"] = searchValue; // Fill Phone column
-                newFields["TG"] = "-";            // Leave TG empty/dash
+                newFields["Phone"] = searchValue;
+                newFields["TG"] = "-";
             }
 
             const createUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
@@ -133,8 +137,15 @@ module.exports = async (req, res) => {
             return res.status(200).json({ 
                 success: true, 
                 message: 'New guest recorded',
-                matchedValue: searchValue,
-                type: 'CREATE' 
+                type: 'CREATE',
+                // Return data in the specific order: Name | Phone | TG | Arrived | Time
+                record: {
+                    "Name": newFields["Name"],
+                    "Phone": newFields["Phone"],
+                    "TG": newFields["TG"],
+                    "Arrived": true,
+                    "Time": time
+                }
             });
         }
 
