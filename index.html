@@ -120,32 +120,24 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function playBeep() {
-            // Must resume context if it was suspended (mobile browser policy)
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-
-            oscillator.type = 'square'; // 'Square' wave sounds more like a digital scanner
-            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); // High pitch
-            oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1); // Drop pitch slightly
-
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime); 
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1); 
             gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.15); // Short 150ms beep
+            oscillator.stop(audioCtx.currentTime + 0.15);
         }
 
         // --- LOGGING UI ---
         function addLog(message, type = 'info') {
             const container = document.getElementById('logsContainer');
             const time = new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-            
-            // Clear placeholder
             if (container.querySelector('.text-gray-600')) container.innerHTML = '';
 
             const colors = {
@@ -161,15 +153,12 @@
                     <span>${message}</span>
                     <span class="text-xs opacity-50">${time}</span>
                 </div>`;
-            
             container.insertBefore(logEntry, container.firstChild);
         }
 
         // --- CAMERA ---
         async function startCamera() {
-            // Mobile browsers require sound to be initialized on a user click
             if (audioCtx.state === 'suspended') audioCtx.resume();
-
             try {
                 const constraints = { video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } } };
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -248,30 +237,55 @@
             }
         }
 
-        // --- DATA HANDLING ---
+        // --- SMART DATA PARSING (The Fix) ---
+        function parseQRData(text) {
+            // Split by pipe (|), tab, or multiple spaces
+            let parts = text.split(/[\|\t]+| {2,}/).map(item => item.trim());
+            let phone = "";
+            let telegram = "";
+            
+            parts.forEach(part => {
+                // Check if part is a Phone Number
+                if (part.match(/^(\+?964|07|00964|\d{10,})/)) {
+                    phone = part.replace(/\D/g, ''); 
+                } 
+                // Check if Telegram
+                else if (part.startsWith('@')) {
+                    telegram = part;
+                }
+            });
+
+            return { phone, telegram };
+        }
+
         function handleScanSuccess(data) {
             if (scannedCodes.has(data)) return; 
-
-            // 🔊 BEEP!
             playBeep();
 
-            let payload = {}; 
-            // Telegram Logic
-            if (data.startsWith('@')) {
-                addLog(`🔹 Telegram: ${data}`, 'info');
-                payload = { telegram: data };
+            // Use the Smart Parser
+            const parsed = parseQRData(data);
+            let payload = {};
+
+            if (parsed.telegram) {
+                addLog(`🔹 Telegram: ${parsed.telegram}`, 'info');
+                payload = { telegram: parsed.telegram };
             } 
-            // Phone Logic
+            else if (parsed.phone && parsed.phone.length > 5) {
+                payload = { phone: parsed.phone };
+            } 
             else {
+                // Fallback: If no pipe structure, try simple extraction
                 let digits = data.replace(/\D/g, '');
-                if (digits.length < 6) return; 
-                payload = { phone: digits };
+                if (digits.length > 5) {
+                    payload = { phone: digits };
+                } else {
+                    return; // Invalid scan
+                }
             }
 
             scanningEnabled = false;
             document.getElementById('statusDot').className = 'w-3 h-3 rounded-full bg-yellow-500';
             document.getElementById('statusText').textContent = 'PROCESSING...';
-
             scannedCodes.add(data);
             sendToBackend(payload);
         }
@@ -286,10 +300,12 @@
                 });
 
                 const result = await response.json();
-
                 if (!response.ok) throw new Error(result.details || result.error || 'Server Error');
 
-                let msg = result.type === 'UPDATE' ? `✅ Checked: ${result.matchedValue}` : `🆕 Added: ${result.matchedValue}`;
+                // FIX: Use matchedValue OR fall back to record.Name
+                const displayName = result.matchedValue || (result.record ? result.record.Name : "Unknown");
+                
+                let msg = result.type === 'UPDATE' ? `✅ Checked: ${displayName}` : `🆕 Added: ${displayName}`;
                 addLog(msg, 'success');
                 
                 document.getElementById('scanNextContainer').classList.remove('hidden');
